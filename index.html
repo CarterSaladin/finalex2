@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resort Listings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h2>Sort Resorts</h2>
+    <select id="sort-options">
+        <option value="price-asc">Price (Low to High)</option>
+        <option value="price-desc">Price (High to Low)</option>
+        <option value="rating-asc">Rating (Low to High)</option>
+        <option value="rating-desc">Rating (High to Low)</option>
+    </select>
+    <button onclick="applySort()">Sort</button>
+
+    <div class="resort-container" id="resort-list"></div>
+
+    <script>
+        const JSON_URL = "https://raw.githubusercontent.com/CarterSaladin/wcsgjson/refs/heads/main/data.json";
+
+        function extractRating(imageUrl) {
+    if (!imageUrl) return 0; // Return 0 if imageUrl is missing or undefined
+    const match = imageUrl.match(/number-(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+}
+
+
+        function fetchAndSortData(sortBy, order = "asc") {
+            fetch(JSON_URL)
+    .then(response => response.json())
+    .then(data => {
+        console.log("Fetched Data:", data); // Debugging: Check JSON structure
+
+        if (!Array.isArray(data) || data.length === 0) {
+            console.error("Invalid or empty JSON data");
+            return;
+        }
+
+        data.forEach(item => {
+            console.log("Processing Resort:", item); // Debugging each resort
+            item.rating = extractRating(item.ratingImageUrl);
+        });
+
+        data.sort((a, b) => {
+            let valueA = a[sortBy];
+            let valueB = b[sortBy];
+            return order === "asc" ? valueA - valueB : valueB - valueA;
+        });
+
+        displayData(data);
+    })
+    .catch(error => console.error("Error fetching JSON:", error));
+        }
+
+        function displayData(data) {
+    console.log("Displaying Data:", data); // Debugging
+
+    const resortList = document.getElementById("resort-list");
+    resortList.innerHTML = ""; // Clear existing list
+
+    data.forEach(item => {
+        const prosList = Array.isArray(item.pros) ? item.pros.join("<br>") : "No pros available";
+        const consList = Array.isArray(item.cons) ? item.cons.join("<br>") : "No cons available";
+
+        const section = document.createElement("section");
+        section.innerHTML = `
+            <div class="left">
+                <h2>${item.name}</h2>
+                <h3>${item.location}</h3>
+                <img src="${item.ratingImageUrl}" alt="Rating ${item.rating}">
+                <p>Lift Ticket Price and Pass Info:</p>
+                <div class="price">
+                    <p>$${item.price}</p>
+                    <p>${item.passType}</p>
+                </div>
+            </div>
+
+            <div class="right">
+                <div class="top">
+                    <div class="pros">
+                        <h4>Pros</h4>
+                        <p>${prosList}</p>
+                    </div>
+                    <div class="cons">
+                        <h4>Cons</h4>
+                        <p>${consList}</p>
+                    </div>
+                    <div class="info">
+                        <p><a href="${item.trailMap}" target="_blank">Trail Map</a></p>
+                        <p><a href="${item.homepage}" target="_blank">Homepage</a></p>
+                    </div>
+                </div>
+                <div class="bottom">
+                    <div class="desc">
+                        <h4>My Experience</h4>
+                        <p>${item.experience || "No experience provided."}</p>
+                    </div>
+                    <div class="maps">
+                        <iframe src="${item.googleMapsUrl}" width="170" height="170" style="border:0;" allowfullscreen="yes" loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+        `;
+        resortList.appendChild(section);
+    });
+        }
+
+        function applySort() {
+            const selectedOption = document.getElementById("sort-options").value;
+            const [sortBy, order] = selectedOption.split("-");
+            fetchAndSortData(sortBy, order);
+        }
+
+        // Load resorts on page load
+        fetchAndSortData("rating", "asc");
+    </script>
+
+</body>
+</html>
